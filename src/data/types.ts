@@ -46,6 +46,7 @@ export interface Invoice {
 
   subTotalLabel: string
   taxLabel: string
+  deliveryChargeLabel: string
   paidLabel: string
 
   totalLabel: string

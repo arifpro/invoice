@@ -1,6 +1,10 @@
 import React, { FC, useState, useEffect } from "react";
 import { Invoice, ProductLine } from "../data/types";
-import { initialInvoice, initialProductLine } from "../data/initialData";
+import {
+  initialInvoice,
+  initialProductLine,
+  dhakaZipCodes,
+} from "../data/initialData";
 import EditableInput from "./EditableInput";
 // import EditableSelect from "./EditableSelect";
 import EditableTextarea from "./EditableTextarea";
@@ -11,7 +15,7 @@ import Page from "./Page";
 import View from "./View";
 import Text from "./Text";
 import { Font } from "@react-pdf/renderer";
-import Download from "./DownloadPDF";
+// import Download from "./DownloadPDF";
 import format from "date-fns/format";
 import logo from "../images/logo.png";
 
@@ -38,7 +42,9 @@ const InvoicePage: FC<Props> = ({ data, pdfMode }) => {
   );
   const [subTotal, setSubTotal] = useState<number>();
   const [saleTax, setSaleTax] = useState<number>();
+  const [deliveryCharge, setDeliveryCharge] = useState<string>();
   const [paidTotal, setPaidTotal] = useState<string>();
+  // const [isDhaka, setIsDhaka] = useState<boolean>(false);
 
   let notes: string[];
   notes = [
@@ -50,7 +56,30 @@ const InvoicePage: FC<Props> = ({ data, pdfMode }) => {
 
   let indexOfNote;
 
-  console.log(indexOfNote)
+  // console.log(indexOfNote, saleTax);
+
+  useEffect(() => {
+    const zipStr = invoice.clientAddress2
+      .toLowerCase()
+      .split("")
+      .filter((a) => isNaN(parseInt(a)) === false)
+      .join("");
+
+    if (
+      invoice.clientAddress2.toLowerCase().indexOf("dhaka") !== -1 ||
+      invoice.clientAddress.toLowerCase().indexOf("dhaka") !== -1 ||
+      dhakaZipCodes?.find((zip) => zipStr.indexOf(zip.toString()) !== -1) !==
+        undefined
+    ) {
+      // setIsDhaka(true);
+      setDeliveryCharge("70.00");
+      // console.log("Inside Dhaka");
+    } else {
+      // setIsDhaka(false);
+      setDeliveryCharge("100.00");
+      // console.log("Outside Dhaka");
+    }
+  }, [invoice.clientAddress2, invoice.clientAddress]);
 
   const dateFormat = "MMM dd, yyyy";
   const invoiceDate =
@@ -151,6 +180,7 @@ const InvoicePage: FC<Props> = ({ data, pdfMode }) => {
 
     setSaleTax(saleTax);
     setPaidTotal("0.00");
+    // setDeliveryCharge("0.00");
   }, [subTotal, invoice.taxLabel]);
 
   return (
@@ -645,7 +675,8 @@ const InvoicePage: FC<Props> = ({ data, pdfMode }) => {
                 </Text>
               </View>
             </View>
-            <View className="flex" pdfMode={pdfMode}>
+
+            {/* <View className="flex" pdfMode={pdfMode}>
               <View className="w-50 p-5" pdfMode={pdfMode}>
                 <EditableInput
                   value={invoice.taxLabel}
@@ -658,7 +689,32 @@ const InvoicePage: FC<Props> = ({ data, pdfMode }) => {
                   {saleTax?.toFixed(2)}
                 </Text>
               </View>
+            </View> */}
+
+            <View className="flex" pdfMode={pdfMode}>
+              <View className="w-50 p-5" pdfMode={pdfMode}>
+                <EditableInput
+                  value={invoice.deliveryChargeLabel}
+                  onChange={(value) =>
+                    handleChange("deliveryChargeLabel", value)
+                  }
+                  pdfMode={pdfMode}
+                />
+              </View>
+              <View className="w-50 p-5" pdfMode={pdfMode}>
+                {/* <Text className="right bold dark" pdfMode={pdfMode}>
+                  {deliveryCharge?.toFixed(2)}
+                </Text> */}
+                <EditableInput
+                  className="right bold dark"
+                  // value={paidTotal && parseFloat(paidTotal)?.toFixed(2)}
+                  value={deliveryCharge}
+                  onChange={(value) => setDeliveryCharge(value)}
+                  pdfMode={pdfMode}
+                />
+              </View>
             </View>
+
             <View className="flex" pdfMode={pdfMode}>
               <View className="w-50 p-5" pdfMode={pdfMode}>
                 <EditableInput
@@ -698,9 +754,11 @@ const InvoicePage: FC<Props> = ({ data, pdfMode }) => {
                 />
                 <Text className="right bold dark w-auto" pdfMode={pdfMode}>
                   {(typeof subTotal !== "undefined" &&
-                  typeof saleTax !== "undefined" &&
+                  typeof deliveryCharge !== "undefined" &&
                   typeof paidTotal !== "undefined"
-                    ? subTotal + saleTax - parseFloat(paidTotal)
+                    ? subTotal +
+                      parseFloat(deliveryCharge) -
+                      parseFloat(paidTotal)
                     : 0
                   ).toFixed(2)}
                 </Text>
